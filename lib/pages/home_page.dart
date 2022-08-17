@@ -1,10 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:simple_sqlite/main.dart';
-import 'package:simple_sqlite/models/user_model.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:simple_sqlite/blocs/users/users_bloc.dart';
 import 'package:simple_sqlite/pages/add_user_page.dart';
+import 'package:simple_sqlite/pages/edit_user.dart';
 
 class HomePage extends StatefulWidget {
+  static Widget view() => BlocProvider(create: (context) => UsersBloc(), child: const HomePage(),);
   const HomePage({Key? key}) : super(key: key);
 
   @override
@@ -12,12 +15,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<User> users = [];
+  late UsersBloc _bloc;
 
   @override
   void initState() {
+    _bloc = context.read<UsersBloc>();
+    _bloc.add(const GetUsersEvent());
     super.initState();
-    getUsers();
   }
 
   @override
@@ -29,29 +33,65 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const AddUserPage())),
+        onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) =>
+            AddUserPage.view())).then((value) => _bloc.add(const GetUsersEvent())),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => getUsers(),
-        child: ListView.builder(
-          itemCount: users.length,
-          itemBuilder: (context, index) => Card(
-            child: ListTile(
-              title: Text(users[index].name),
-              subtitle: Text('age: ${users[index].age}'),
-            ),
-          ),
-        ),
+      body: BlocBuilder<UsersBloc, UsersState>(
+        builder: (context, state) {
+
+          if(state is LoadingState) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if(state is ErrorState) {
+            return Center(
+              child: Text(state.message),
+            );
+          }
+          if(state is SuccessState) {
+            return RefreshIndicator(
+              onRefresh: () async{
+                _bloc.add(const GetUsersEvent());
+              },
+              child: ListView.builder(
+                physics: const BouncingScrollPhysics(),
+                itemCount: state.users.length,
+                itemBuilder: (context, index) => Slidable(
+                  endActionPane: ActionPane(
+                    extentRatio: 0.45,
+                    motion: const ScrollMotion(),
+                    children: [
+                      SlidableAction(
+                        borderRadius: BorderRadius.circular(15),
+                        onPressed: (_) => _bloc.add(DeleteUserEvent(state.users[index].id)),
+                        backgroundColor: Colors.pink,
+                        icon: CupertinoIcons.delete,
+                        label: 'Delete',
+                      ),
+                      SlidableAction(
+                        borderRadius: BorderRadius.circular(15),
+                        backgroundColor: Colors.teal,
+                        onPressed: (_) => Navigator.push(context, CupertinoPageRoute(builder: (context) => 
+                            EditUserPage.view(state.users[index]))).then((value) => _bloc.add(const GetUsersEvent())),
+                        icon: CupertinoIcons.pencil,
+                        label: 'Edit',
+                      ),
+                    ],
+                  ),
+                  child: Card(
+                    child: ListTile(
+                      title: Text(state.users[index].name),
+                      subtitle: Text('age: ${state.users[index].age}'),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+          return Container();
+        },
       ),
     );
   }
 
-  Future<void> getUsers() async{
-    final db = await database;
 
-    final List<Map<String, dynamic>> usersMap = await db.query('users');
-
-    users = List.generate(usersMap.length, (index) => User(id: usersMap[index]['id'], name: usersMap[index]['name'], age: usersMap[index]['age']));
-    setState(() {});
-  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:simple_sqlite/blocs/users/users_bloc.dart';
 import 'package:simple_sqlite/pages/add_user_page.dart';
 import 'package:simple_sqlite/pages/edit_user.dart';
@@ -38,10 +39,6 @@ class _HomePageState extends State<HomePage> {
       ),
       body: BlocBuilder<UsersBloc, UsersState>(
         builder: (context, state) {
-
-          if(state is LoadingState) {
-            return const Center(child: CircularProgressIndicator());
-          }
           if(state is ErrorState) {
             return Center(
               child: Text(state.message),
@@ -92,6 +89,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-
 }

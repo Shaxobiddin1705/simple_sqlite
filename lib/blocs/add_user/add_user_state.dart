@@ -17,22 +17,20 @@ class LoadingState extends AddUserState{
 }
 
 class SuccessState extends AddUserState{
-  final User user;
-
-  const SuccessState({required this.user});
+  const SuccessState();
 
   @override
   // TODO: implement props
-  List<Object?> get props => [user];
+  List<Object?> get props => [];
 
 }
 
-class ErrorState extends UsersState{
+class ErrorState extends AddUserState{
   final String message;
 
   const ErrorState(this.message);
 
   @override
   // TODO: implement props
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => [message];
 }
